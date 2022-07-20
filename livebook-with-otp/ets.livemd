@@ -1,0 +1,286 @@
+# ETS
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.6.2"},
+  {:factory, path: "./factory"}
+])
+```
+
+## Navigation
+
+* [Index](./index.livemd)
+
+## ETS Tables
+
+Again, we suffer from issues with named `:ets` tables (evaluate the cell below twice.)
+
+```elixir
+:ets.new(:my_table, [:named_table])
+```
+
+For the most part, if we start the table in it's own cell this isn't a problem.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Visualizing ETS tables
+
+`Kino.ETS` provides a [new/1](https://hexdocs.pm/kino/Kino.ETS.html#new/1) function for visualizing tables.
+
+```elixir
+Kino.ETS.new(:my_table)
+```
+
+This table can be manually updated to view the `:ets` table when we insert values into it.
+
+```elixir
+:ets.insert(:my_table, {:key, "value"})
+```
+
+### Resetting :ets Tables
+
+If you want to reset the table, the best way I've found so far is to use `delete_all_objects`.
+
+```elixir
+case :ets.whereis(:resetting_table) do
+  :undefined -> :ets.new(:resetting_table, [:named_table])
+  _ -> :ets.delete_all_objects(:resetting_table)
+end
+
+Kino.ETS.new(:resetting_table)
+```
+
+```elixir
+:ets.insert(:resetting_table, {:key, "value"})
+```
+
+### ETS Configuration
+
+Lets use this opportunity to explore ETS table configuration.
+
+`:ets` Tables are configured with a **Table Type** and **Access Control**.
+
+**Table Types**
+
+* `:set` (default). One value per unique key.
+* `:ordered_set` One value per unique key, ordered by Elixir terms.
+* `:bag` Many values per key, but only one instance of each value per key.
+* `:duplicate_bag` Many values per key with duplicates allowed.
+
+**Access Control**
+
+* `:protected` (default) Read from all process. Write allowed only for the parent process.
+* `:public` Read/Write available from all processes.
+* `:private` Read/Write allowed only for the parent process.
+
+By default, `:ets` tables use the `:set` and `:protected` configuration values. So we may include or exclude them when starting an `:ets` table, and it does not have any effect.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### :set
+
+```elixir
+case :ets.whereis(:set_table) do
+  :undefined -> :ets.new(:set_table, [:named_table, :set])
+  _ -> :ets.delete_all_objects(:set_table)
+end
+
+Kino.ETS.new(:set_table)
+```
+
+```elixir
+:ets.insert(:set_table, {:duplicate, "1"})
+:ets.insert(:set_table, {:duplicate, "2"})
+:ets.insert(:set_table, {:duplicate, "3"})
+# sets only store one value per key, so the table contains the last inserted value only.
+:ets.insert(:set_table, {:duplicate, "4"})
+
+:ets.insert(:set_table, {1, "1"})
+:ets.insert(:set_table, {2, "2"})
+:ets.insert(:set_table, {3, "3"})
+:ets.insert(:set_table, {4, "4"})
+
+# sets do not guarentee term ordering.
+:ets.insert(:set_table, {:atom, ""})
+```
+
+### :bag
+
+```elixir
+case :ets.whereis(:bag_table) do
+  :undefined -> :ets.new(:bag_table, [:named_table, :bag])
+  _ -> :ets.delete_all_objects(:bag_table)
+end
+
+Kino.ETS.new(:bag_table)
+```
+
+```elixir
+# :bag allows multiple values under the same key
+:ets.insert(:bag_table, {:key, "1"})
+:ets.insert(:bag_table, {:key, "2"})
+:ets.insert(:bag_table, {:key, "3"})
+:ets.insert(:bag_table, {:key, "4"})
+
+# However, values must be unique per key, so only one of the following will be stored.
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+```
+
+### :duplicate_bag
+
+```elixir
+case :ets.whereis(:duplicate_bag_table) do
+  :undefined -> :ets.new(:duplicate_bag_table, [:named_table, :duplicate_bag])
+  _ -> :ets.delete_all_objects(:duplicate_bag_table)
+end
+
+Kino.ETS.new(:duplicate_bag_table)
+```
+
+```elixir
+# :duplicate_bag allows multiple values under the same key
+:ets.insert(:duplicate_bag_table, {:key, "1"})
+:ets.insert(:duplicate_bag_table, {:key, "2"})
+:ets.insert(:duplicate_bag_table, {:key, "3"})
+:ets.insert(:duplicate_bag_table, {:key, "4"})
+
+# :duplicate_bag also allows duplicate values.
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+```
+
+### :ordered_set
+
+<!-- livebook:{"break_markdown":true} -->
+
+Elixir terms are sorted according to order.
+
+number < atom < reference < fun < port < pid < tuple < list < bit-string
+
+```elixir
+case :ets.whereis(:ordered_set_table) do
+  :undefined -> :ets.new(:ordered_set_table, [:named_table, :ordered_set])
+  _ -> :ets.delete_all_objects(:ordered_set_table)
+end
+
+Kino.ETS.new(:ordered_set_table)
+```
+
+```elixir
+:ets.insert(:ordered_set_table, {:first_atom, ""})
+
+:ets.insert(:ordered_set_table, {1, "1"})
+:ets.insert(:ordered_set_table, {2, "2"})
+:ets.insert(:ordered_set_table, {3, "3"})
+:ets.insert(:ordered_set_table, {4, "4"})
+
+:ets.insert(:ordered_set_table, {:second_atom, ""})
+```
+
+```elixir
+:ets.first(:ordered_set_table)
+```
+
+```elixir
+:ets.last(:ordered_set_table)
+```
+
+### :private
+
+<!-- livebook:{"break_markdown":true} -->
+
+Since Read/Write on `:private` tables is only allowed for the parent process, we cannot display a private table with `Kino`.
+
+```elixir
+case :ets.whereis(:private_table) do
+  :undefined -> :ets.new(:private_table, [:named_table, :private])
+  _ -> :ets.delete_all_objects(:private_table)
+end
+
+Kino.ETS.new(:private_table)
+```
+
+```elixir
+:ets.insert(:private_table, {:key, "value"})
+```
+
+```elixir
+:ets.lookup(:private_table, :key)
+```
+
+```elixir
+# Task.start(fn ->
+#   :ets.lookup(:private_table, :key)
+# end)
+```
+
+```elixir
+# Task.start(fn ->
+#   :ets.insert(:private_table, {:key, "value"})
+# end)
+```
+
+### :public
+
+```elixir
+case :ets.whereis(:public_table) do
+  :undefined -> :ets.new(:public_table, [:named_table, :public])
+  _ -> :ets.delete_all_objects(:public_table)
+end
+
+Kino.ETS.new(:public_table)
+```
+
+```elixir
+:ets.insert(:public_table, {:key, "value"})
+```
+
+```elixir
+task =
+  Task.async(fn ->
+    :ets.insert(:public_table, {:key, "value"})
+  end)
+
+Task.await(task)
+```
+
+### :protected
+
+Writes only allowed from parent process. Reads allowed from all processes.
+
+```elixir
+case :ets.whereis(:protected_table) do
+  :undefined -> :ets.new(:protected_table, [:named_table, :protected])
+  _ -> :ets.delete_all_objects(:protected_table)
+end
+
+Kino.ETS.new(:protected_table)
+```
+
+```elixir
+:ets.insert(:protected_table, {:key, "value"})
+```
+
+```elixir
+task =
+  Task.async(fn ->
+    :ets.lookup(:protected_table, :key)
+  end)
+
+Task.await(task)
+```
+
+```elixir
+# Task.start(fn ->
+#   :ets.insert(:protected_table, {:key, "value"})
+# end)
+```
+
+## Up Next
+
+* [Tasks](./tasks.livemd)

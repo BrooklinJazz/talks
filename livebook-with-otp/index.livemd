@@ -1,5 +1,11 @@
 # Using Livebook with OTP
 
-## Topics
+## Index
 
-* [Livebook With OTP](./livebook_with_otp.livemd)
+Indexes allow us to organize livebook projects by providing links to `.livemd` files.
+
+* [GenServers and Supervisors](./genservers_and_supervisors.livemd)
+* [ETS](./ets.livemd)
+* [Tasks](./tasks.livemd)
+
+[Talk Slides](https://www.canva.com/design/DAFG0wU1Xrc/17eE9axE-09_CRjCURah3w/view?utm_content=DAFG0wU1Xrc&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)

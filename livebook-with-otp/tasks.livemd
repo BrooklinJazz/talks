@@ -1,0 +1,128 @@
+# Tasks
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.6.2"},
+  {:factory, path: "./factory"}
+])
+```
+
+## Navigation
+
+* [Index](./index.livemd)
+
+## Tasks
+
+Tasks generally behave as expected from within livebook.
+
+```elixir
+task =
+  Task.async(fn ->
+    Process.sleep(1000)
+    "result"
+  end)
+
+Task.await(task) |> IO.puts()
+
+IO.puts("Execution is paused until task finishes")
+```
+
+```elixir
+task =
+  Task.async(fn ->
+    Process.sleep(7000)
+    "result"
+  end)
+
+Task.await(task)
+```
+
+```elixir
+task =
+  Task.async(fn ->
+    Process.sleep(7000)
+    "result"
+  end)
+
+Task.yield(task) |> IO.inspect(label: "yield after 5 second timeout")
+Task.yield(task) |> IO.inspect(label: "yield after 7 seconds.")
+```
+
+### Supervised Tasks
+
+```elixir
+children = [
+  {Task.Supervisor, name: :task_supervisor}
+]
+
+Supervisor.start_link(children, strategy: :one_for_one)
+```
+
+We can start tasks under a supervisor and see them as a list of children pids
+
+```elixir
+Task.Supervisor.async(:task_supervisor, fn ->
+  Process.sleep(10000)
+end)
+```
+
+```elixir
+Task.Supervisor.children(:task_supervisor)
+```
+
+Visualizing tasks under the `:task_supervisor`.
+
+```elixir
+Kino.animate(500, 0, fn _ ->
+  tree = Kino.Process.sup_tree(:task_supervisor)
+  {:cont, tree, 0}
+end)
+```
+
+Linked tasks cause the parent process to crash when we `terminate_child/2`.
+
+```elixir
+task =
+  Task.Supervisor.async_nolink(:task_supervisor, fn ->
+    Process.sleep(20000)
+  end)
+```
+
+```elixir
+Task.shutdown(task)
+```
+
+```elixir
+pid = :c.pid(0, 522, 0)
+
+Task.Supervisor.terminate_child(:task_supervisor, pid)
+```
+
+### Visualizing Task Clusters
+
+```elixir
+# Kino.animate(500, 0, fn _ ->
+#   tree = Kino.Process.sup_tree(:task_supervisor)
+#   {:cont, tree, 0}
+# end)
+```
+
+```elixir
+# tasks =
+#   Enum.map(1..10, fn i ->
+#     Task.Supervisor.async(:task_supervisor, fn ->
+#       Process.sleep(11000 - i * 1000)
+#       i
+#     end)
+#   end)
+
+# Task.await_many(tasks, 11000)
+```
+
+## Key Takeaways (Conclusion)
+
+You can use LiveBook to:
+
+* Gain insight into OTP processes or alongside an existing aplication.
+* Quickly develop OTP experiments and save examples for yourself in the future.
+* Document projects or teach other developers.
