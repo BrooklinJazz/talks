@@ -123,6 +123,6 @@ Task.Supervisor.terminate_child(:task_supervisor, pid)
 
 You can use LiveBook to:
 
-* Gain insight into OTP processes or alongside an existing aplication.
+* Gain insight into OTP processes or alongside an existing application.
 * Quickly develop OTP experiments and save examples for yourself in the future.
 * Document projects or teach other developers.

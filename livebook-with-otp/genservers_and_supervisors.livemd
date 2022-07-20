@@ -164,7 +164,7 @@ Notice the number of processes does not change when we re-evaluate the Elixir ce
 Process.list() |> Enum.count()
 ```
 
-Some additional solutions that may be preferrable depending on the context.
+Some additional solutions that may be preferable depending on the context.
 
 * Write any related code in a different cell so the `MatchError` doesn't cause issues.
 * Use an unlinked process with `start/3` instead of `start_link/3` and kill the process if it is alive.

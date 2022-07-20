@@ -100,7 +100,7 @@ Kino.ETS.new(:set_table)
 :ets.insert(:set_table, {3, "3"})
 :ets.insert(:set_table, {4, "4"})
 
-# sets do not guarentee term ordering.
+# sets do not guarantee term ordering.
 :ets.insert(:set_table, {:atom, ""})
 ```
 
