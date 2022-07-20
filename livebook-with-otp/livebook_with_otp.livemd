@@ -1,0 +1,725 @@
+# Using Livebook with OTP
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.6.2"},
+  {:factory, path: "./factory"}
+])
+```
+
+## Connecting Projects
+
+* Adding remote projects by github url or version
+* Adding local projects for development purposes.
+
+```elixir
+:application_controller.which_applications()
+```
+
+## GenServers
+
+To demonstrate OTP in LiveBook, we're going to use a `Miner` `GenServer` which digs for gold.
+
+<!-- livebook:{"break_markdown":true} -->
+
+```mermaid
+classDiagram
+class Miner {
+  gold: :integer
+}
+
+Miner --> Miner : dig
+```
+
+```elixir
+defmodule Miner do
+  use GenServer
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, [], opts)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 1000)
+  end
+end
+
+{:ok, pid} = Miner.start_link([])
+```
+
+We can see this process is running and sending itself messages.
+
+```elixir
+:sys.get_state(pid)
+```
+
+Keep in mind, every time we run the cell above, we're starting a new process. This may produce unexpected/undesired results. (re-evaluate the `Miner` cell and see the number of processes increase)
+
+```elixir
+Process.list() |> Enum.count()
+```
+
+At any time if we get into a bad state, we can press the `00` keyboard shortcut to reconnect the livebook process, thus stopping all created processes.
+
+## Named GenServers
+
+```elixir
+defmodule MinerJim do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 5000)
+  end
+end
+
+{:ok, pid} = MinerJim.start_link([])
+```
+
+Rerunning the cell above or attempting to start the GenServer again causes an `:already_started` error.
+
+```elixir
+MinerJim.start_link([])
+```
+
+### Trapping Exit
+
+<!-- livebook:{"break_markdown":true} -->
+
+We can use `Process.flag/2` to trigger the `terminate/2` callback for our `GenServer`.
+
+```elixir
+defmodule TrappedMiner do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+    # The terminate/2 callback is called for a normal exit.
+    Process.flag(:trap_exit, true)
+
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 1000)
+  end
+
+  def terminate(_reason, _label) do
+    IO.puts("Saved the Miner!")
+  end
+end
+
+trapped_miner_pid = Process.whereis(TrappedMiner)
+
+if trapped_miner_pid do
+  Process.exit(trapped_miner_pid, :normal)
+  # The process needs time to terminate.
+  Process.sleep(100)
+end
+
+{:ok, pid} = TrappedMiner.start_link([])
+```
+
+This means we can keep killing and re-creating a named process without issue.
+
+So far, this is the best way I've found but there may be better alternatives.
+
+Notice the number of processes does not change when we re-evaluate the Elixir cell above.
+
+```elixir
+Process.list() |> Enum.count()
+```
+
+Some additional solutions that may be preferrable depending on the context.
+
+* Write any related code in a different cell so the `MatchError` doesn't cause issues.
+* Use `start/3` instead of `start_link/3` and kill the process if it is alive.
+* Reconnect the livebook environment (manually or using the `00` keyboard shortcut)
+
+```elixir
+GenServer.start()
+```
+
+## Supervisors
+
+We're going to have a few named miner processes under a supervisor.
+
+```elixir
+defmodule Miner1 do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 1000)
+  end
+end
+
+defmodule Miner2 do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 1000)
+  end
+end
+
+defmodule Miner3 do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    schedule_dig()
+    {:ok, %{gold: 0}}
+  end
+
+  @impl true
+  def handle_info(:dig, %{gold: amount}) do
+    schedule_dig()
+    {:noreply, %{gold: amount + 1}}
+  end
+
+  defp schedule_dig do
+    Process.send_after(self(), :dig, 1000)
+  end
+end
+```
+
+Named `Supervisors` suffer from the same issue as named `GenServers`. Arguably the issue is worse, because we cannot easily update their children without reconnecting the LiveBook instance.
+
+```elixir
+children = []
+
+# children = [
+#   {Miner, []}
+# ]
+
+Supervisor.start_link(children, strategy: :one_for_one, name: :doomed_to_already_start)
+```
+
+```elixir
+Supervisor.which_children(:doomed_to_already_start)
+```
+
+We can avoid this issue by first stopping the supervisor if it's already running.
+
+```elixir
+sup_pid = Process.whereis(:restart_example)
+
+if sup_pid do
+  Supervisor.stop(sup_pid)
+end
+
+children = []
+
+# children = [
+#   {Miner, []}
+# ]
+
+Supervisor.start_link(children, strategy: :one_for_one, name: :restart_example)
+```
+
+```elixir
+Supervisor.which_children(:restart_example)
+```
+
+### Visualizing Supervision Trees
+
+<!-- livebook:{"break_markdown":true} -->
+
+Let's use this pattern to start a `:mine_supervisor` that will supervise `Miner1`, `Miner2`, `Miner3`, and a `DynamicSupervisor` for more `Miner` processes.
+
+```elixir
+sup_pid = Process.whereis(:mine_supervisor)
+
+if sup_pid do
+  Supervisor.stop(sup_pid)
+end
+
+children = [
+  {DynamicSupervisor, strategy: :one_for_one, name: :miner_supervisor},
+  {Miner1, []},
+  {Miner2, []},
+  {Miner3, []}
+]
+
+Supervisor.start_link(children, strategy: :one_for_one, name: :mine_supervisor)
+```
+
+`Kino.Process` comes with a [sup_tree/2](https://hexdocs.pm/kino/Kino.Process.html#sup_tree/2) function for visualizing supervision trees.
+
+```elixir
+Kino.Process.sup_tree(:mine_supervisor)
+```
+
+We can add processes and see them reflected in our diagram (uncomment the code below.)
+
+```elixir
+DynamicSupervisor.start_child(:miner_supervisor, {Miner, []})
+```
+
+### Animated Supervision Trees
+
+By leveraging `Kino` animations, we can even create an updating diagram.
+
+```elixir
+Kino.animate(1000, 0, fn i ->
+  tree = Kino.Process.sup_tree(:mine_supervisor)
+  {:cont, tree, i + 1}
+end)
+
+Kino.animate(1000, 0, fn i ->
+  mine_children = inspect(Supervisor.count_children(:mine_supervisor))
+  miner_children = inspect(Supervisor.count_children(:miner_supervisor))
+
+  md =
+    Kino.Markdown.new("""
+    **:mine_supervisor children: `#{mine_children}`**
+
+    **:miner_supervisor children: `#{miner_children}`**
+    """)
+
+  {:cont, md, i + 1}
+end)
+```
+
+```elixir
+# {:ok, pid} = DynamicSupervisor.start_child(:miner_supervisor, {Miner, [name: :miner]})
+{:ok, pid} = DynamicSupervisor.start_child(:miner_supervisor, {Miner, []})
+```
+
+We can even kill processes and see them reflected in an updated diagram above when we re-evaluate the diagram. (set `pid` to one of the pids under the `:miner_supervisor`)
+
+```elixir
+pid = :c.pid(0, 297, 0)
+DynamicSupervisor.terminate_child(:miner_supervisor, pid)
+```
+
+Or see a process restarted with a new PID under the tree.
+
+```elixir
+pid = :c.pid(0, 337, 0)
+
+Process.exit(pid, :kill)
+```
+
+## App Supervision Trees
+
+`Kino.Process` provides an `app_sup/1` function we can use to explore supervision trees in our applications and in external libraries.
+
+For sake of example we've included a `Factory` mix project you can see in the `./factory` folder of this project.
+
+```elixir
+Kino.Process.app_tree(:factory)
+```
+
+We can also use the `sup_tree/2` function on the application's supervisor. This excludes the two processes coming from livebook.
+
+```elixir
+Kino.Process.sup_tree(Factory.Supervisor)
+```
+
+Here's a fun example where we can monitor the state of processes in our application.
+
+> Side Note: there's an upcoming feature to trace processes in LiveBook by [Alex Koutmos](https://twitter.com/akoutmos/status/1542710874586112001)
+
+```elixir
+Kino.animate(1000, 0, fn _ ->
+  tree = Kino.Process.sup_tree(Factory.Supervisor)
+  {:cont, tree, 0}
+end)
+
+Kino.animate(1000, 0, fn _ ->
+  gold = inspect(:sys.get_state(Factory.GoldMiner))
+  silver = inspect(:sys.get_state(Factory.SilverMiner))
+  iron = inspect(:sys.get_state(Factory.IronMiner))
+
+  dynamic =
+    DynamicSupervisor.which_children(Factory.DynamicMinerSupervisor)
+    |> Enum.map(fn {_, pid, _, _} ->
+      "- #{inspect(pid)}: #{inspect(:sys.get_state(pid))}\n"
+    end)
+
+  storage = inspect(:sys.get_state(Factory.Storage))
+
+  md =
+    Kino.Markdown.new("""
+    - Factory.GoldMiner: #{gold}
+    - Factory.SilverMiner: #{silver}
+    - Factory.IronMiner: #{iron}
+    - Factory.Storage: #{storage}
+    
+    DynamicMinerSupervisor:
+    
+    #{dynamic}
+    """)
+
+  {:cont, md, 0}
+end)
+```
+
+```elixir
+DynamicSupervisor.start_child(Factory.DynamicMinerSupervisor, {Factory.GoldMiner, []})
+```
+
+We can use this with any application available from the livebook environment.
+We can use `:application_controller` to view available applications.
+
+```elixir
+:application_controller.which_applications()
+```
+
+We can use this to explore other projects if they have supervisors! The `:direction` option is useful for viewing larger trees.
+
+```elixir
+Kino.Process.app_tree(:kernel, direction: :left_right)
+```
+
+## ETS Tables
+
+Again, we suffer from issues with named `:ets` tables (evaluate the cell below twice.)
+
+```elixir
+:ets.new(:my_table, [:named_table])
+```
+
+For the most part, if we start the table in it's own cell this isn't a problem.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Visualizing ETS tables
+
+`Kino.ETS` provides a [new/1](https://hexdocs.pm/kino/Kino.ETS.html#new/1) function for visualizing tables.
+
+```elixir
+Kino.ETS.new(:my_table)
+```
+
+This table can be manually updated to view the `:ets` table when we insert values into it.
+
+```elixir
+:ets.insert(:my_table, {:key, "value"})
+```
+
+### Resetting :ets Tables
+
+If you want to reset the table, the best way I've found so far is to use `delete_all_objects`.
+
+```elixir
+case :ets.whereis(:resetting_table) do
+  :undefined -> :ets.new(:resetting_table, [:named_table])
+  _ -> :ets.delete_all_objects(:resetting_table)
+end
+
+Kino.ETS.new(:resetting_table)
+```
+
+```elixir
+:ets.insert(:resetting_table, {:key, "value"})
+```
+
+### ETS Configuration
+
+Lets use this opportunity to explore ETS table configuration.
+
+`:ets` Tables are configured with a **Table Type** and **Access Control**.
+
+**Table Types**
+
+* `:set` (default). One value per unique key.
+* `:ordered_set` One value per unique key, ordered by Elixir terms.
+* `:bag` Many values per key, but only one instance of each value per key.
+* `:duplicate_bag` Many values per key with duplicates allowed.
+
+**Access Control**
+
+* `:protected` (default) Read from all process. Write allowed only for the parent process.
+* `:public` Read/Write available from all processes.
+* `:private` Read/Write allowed only for the parent process.
+
+By default, `:ets` tables use the `:set` and `:protected` configuration values. So we may include or exclude them when starting an `:ets` table, and it does not have any effect.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### :set
+
+```elixir
+case :ets.whereis(:set_table) do
+  :undefined -> :ets.new(:set_table, [:named_table, :set])
+  _ -> :ets.delete_all_objects(:set_table)
+end
+
+Kino.ETS.new(:set_table)
+```
+
+```elixir
+:ets.insert(:set_table, {:duplicate, "1"})
+:ets.insert(:set_table, {:duplicate, "2"})
+:ets.insert(:set_table, {:duplicate, "3"})
+# sets only store one value per key, so the table contains the last inserted value only.
+:ets.insert(:set_table, {:duplicate, "4"})
+
+:ets.insert(:set_table, {1, "1"})
+:ets.insert(:set_table, {2, "2"})
+:ets.insert(:set_table, {3, "3"})
+:ets.insert(:set_table, {4, "4"})
+
+# sets do not guarentee term ordering.
+:ets.insert(:set_table, {:atom, ""})
+```
+
+### :bag
+
+```elixir
+case :ets.whereis(:bag_table) do
+  :undefined -> :ets.new(:bag_table, [:named_table, :bag])
+  _ -> :ets.delete_all_objects(:bag_table)
+end
+
+Kino.ETS.new(:bag_table)
+```
+
+```elixir
+# :bag allows multiple values under the same key
+:ets.insert(:bag_table, {:key, "1"})
+:ets.insert(:bag_table, {:key, "2"})
+:ets.insert(:bag_table, {:key, "3"})
+:ets.insert(:bag_table, {:key, "4"})
+
+# However, values must be unique per key, so only one of the following will be stored.
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+:ets.insert(:bag_table, {:key, "duplicate"})
+```
+
+### :duplicate_bag
+
+```elixir
+case :ets.whereis(:duplicate_bag_table) do
+  :undefined -> :ets.new(:duplicate_bag_table, [:named_table, :duplicate_bag])
+  _ -> :ets.delete_all_objects(:duplicate_bag_table)
+end
+
+Kino.ETS.new(:duplicate_bag_table)
+```
+
+```elixir
+# :duplicate_bag allows multiple values under the same key
+:ets.insert(:duplicate_bag_table, {:key, "1"})
+:ets.insert(:duplicate_bag_table, {:key, "2"})
+:ets.insert(:duplicate_bag_table, {:key, "3"})
+:ets.insert(:duplicate_bag_table, {:key, "4"})
+
+# :duplicate_bag also allows duplicate values.
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+:ets.insert(:duplicate_bag_table, {:key, "duplicate"})
+```
+
+### :ordered_set
+
+<!-- livebook:{"break_markdown":true} -->
+
+Elixir terms are sorted according to order.
+
+number < atom < reference < fun < port < pid < tuple < list < bit-string
+
+```elixir
+case :ets.whereis(:ordered_set_table) do
+  :undefined -> :ets.new(:ordered_set_table, [:named_table, :ordered_set])
+  _ -> :ets.delete_all_objects(:ordered_set_table)
+end
+
+Kino.ETS.new(:ordered_set_table)
+```
+
+```elixir
+:ets.insert(:ordered_set_table, {:first_atom, ""})
+
+:ets.insert(:ordered_set_table, {1, "1"})
+:ets.insert(:ordered_set_table, {2, "2"})
+:ets.insert(:ordered_set_table, {3, "3"})
+:ets.insert(:ordered_set_table, {4, "4"})
+
+:ets.insert(:ordered_set_table, {:second_atom, ""})
+```
+
+```elixir
+:ets.first(:ordered_set_table)
+```
+
+```elixir
+:ets.last(:ordered_set_table)
+```
+
+### :private
+
+<!-- livebook:{"break_markdown":true} -->
+
+Since Read/Write on `:private` tables is only allowed for the parent process, we cannot display a private table with `Kino`.
+
+```elixir
+case :ets.whereis(:private_table) do
+  :undefined -> :ets.new(:private_table, [:named_table, :private])
+  _ -> :ets.delete_all_objects(:private_table)
+end
+
+Kino.ETS.new(:private_table)
+```
+
+```elixir
+:ets.insert(:private_table, {:key, "value"})
+```
+
+```elixir
+:ets.lookup(:private_table, :key)
+```
+
+```elixir
+# Task.async(fn ->
+#   :ets.lookup(:private_table, :key)
+# end)
+```
+
+```elixir
+# Task.async(fn ->
+#   :ets.insert(:private_table, {:key, "value"})
+# end)
+```
+
+### :public
+
+```elixir
+case :ets.whereis(:public_table) do
+  :undefined -> :ets.new(:public_table, [:named_table, :public])
+  _ -> :ets.delete_all_objects(:public_table)
+end
+
+Kino.ETS.new(:public_table)
+```
+
+```elixir
+:ets.insert(:public_table, {:key, "value"})
+```
+
+```elixir
+task =
+  Task.async(fn ->
+    :ets.insert(:public_table, {:key, "value"})
+  end)
+
+Task.await(task)
+```
+
+### :protected
+
+```elixir
+case :ets.whereis(:protected_table) do
+  :undefined -> :ets.new(:protected_table, [:named_table, :protected])
+  _ -> :ets.delete_all_objects(:protected_table)
+end
+
+Kino.ETS.new(:protected_table)
+```
+
+```elixir
+:ets.insert(:protected_table, {:key, "value"})
+```
+
+```elixir
+# task = Task.async(fn ->
+#   :ets.insert(:protected_table, {:key, "value"})
+# end)
+
+# Task.await(task)
+```
+
+## Observer
+
+We can also start the observer from Livebook.
+
+```elixir
+# :observer.start()
+```
+
+## Conclusion
+
+You can use livebook to
+
+* Gain insight into OTP processes or alongside an existing aplication.
+* Quickly develop OTP experiments and save examples for yourself in the future.
+* Document projects or teach other developers.
