@@ -2,7 +2,7 @@
 
 Presented on 2022 July 20.
 
-Video Available Here: https://www.youtube.com/watch?v=P0WJBP2bzuk
+Video: https://www.youtube.com/watch?v=P0WJBP2bzuk
 
 To run this project, ensure you have the latest [livebook](https://github.com/livebook-dev/livebook) installed.
 
