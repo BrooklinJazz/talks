@@ -1,0 +1,275 @@
+# Eng Dept Sync 2023-05-19
+
+```elixir
+Mix.install([{:kino_tailwind_playground, github: "BrooklinJazz/kino_tailwind_playground"}],
+  force: true
+)
+```
+
+## Year Recap
+
+```mermaid
+timeline
+    title DockYard Academy Timeline
+    2022 Dec 10th 
+                : Early Community Feedback
+                : Content Development
+    2022 September 21st 
+                : Beta Cohort Begins
+    2023 January 20th 
+                : Beta Cohort Capstone Demo Day
+    2023 February 1st 
+                : First Official Cohort
+    2023 May 12th 
+                : Graduation and First Public Demo Day
+    2023 June 5th 
+                : First Paid Cohort
+                : Curriculum Release 2
+```
+
+## Notable Numbers
+
+* 555+ Stars on GitHub
+* 182+ Forks
+* 85+ Lessons
+* 118+ Exercises
+* 10+ Community mentors
+* 61+ Contributors
+* 16+ Beta Testers
+* 10 Students
+* 11 Application/payment confirmations for next cohort.
+
+## Values
+
+[The DockYard Academy Way](https://docs.google.com/document/d/19vm1cOc871KF8nodYl11xYDPm4vo6FFVwjSmAfYgqXM/edit)
+
+* Practicality
+* Engagement
+* Collaboration and Community
+* Excellence
+* Humilty
+* Student Driven
+
+> We aspire to create a low-stress environment for a high-stress activity.
+
+## Core Skills
+
+```mermaid
+mindmap
+    DockYard Academy
+        Tooling
+        Elixir Fundamentals
+        Mix Projects
+        Phoenix
+        OTP and Advanced Syntax
+        Ecto
+        LiveView
+```
+
+See the curriculum repo https://github.com/DockYard-Academy/curriculum for a full breakdown.
+
+## Building a Community
+
+### Events
+
+* Friday Advanced Elixir Developer (AED) sessions.
+* Monday-Thursday 1hr community mentor sessions.
+* Weekend Elixir Newbie: Open Source Group sessions
+* Weekly student 1-1s
+* Students on the Elixir Newbie and Elixir Roundtable Podcasts
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Culture
+
+* Normalizing emotions and stress: preparing students for transition periods
+* Celebrating "I don't know"
+* Encouraging engagement
+* Never nitpicking
+* Students teaching students
+
+## Hard Faught Lessons
+
+* Supporting students during capstone projects -> Daily intention setting
+* Interactive content for larger topics -> Mob instruction
+* Providing both breadth and depth -> Bonus topics, AED class, alumni mentors
+* Mentorship session attendance -> Session topics
+* Demo Day technical issues -> New platform research
+* GitHub Branch Management Problems -> Move towards releases
+
+## Content Changes
+
+General content shifts
+
+* Independent work -> Group work
+* Follow-along projects -> Open-ended projects
+* Instructor-led instruction -> Mob programming instruction
+* Solo reading -> Review questions and group discussion
+* Specific skills -> Holistic education
+* Breadth -> Depth
+
+Other additions
+
+* Anticipating common struggles
+* Overview sections
+* Expanding further reading sections
+* Supporting post-academy learning
+* Peer-to-peer learning
+
+Examples
+
+* Student review presentations
+* Support groups
+* Group blog project
+* Removing booksearch project
+* Expanded Phoenix and Ecto reading material
+* Expanding capstone project
+* Removing topics and bonus topics section
+
+## Tooling
+
+### Tailwind Playground
+
+<!-- livebook:{"attrs":{"html":"<div class=\"relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12\">\n  <div\n    class=\"relative bg-white px-6 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-lg sm:rounded-lg sm:px-10\">\n    <div class=\"mx-auto max-w-md\">\n      <div class=\"divide-y divide-gray-300/50\">\n        <div class=\"space-y-6 py-8 text-base leading-7 text-gray-600\">\n          <p>An advanced online playground for Tailwind CSS in Livebook</p>\n        </div>\n        <div class=\"pt-8 text-base font-semibold leading-7\">\n          <p class=\"text-gray-900\">Want to dig deeper into Tailwind?</p>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n"},"chunks":null,"kind":"Elixir.Kino.TailwindPlayground","livebook_object":"smart_cell"} -->
+
+```elixir
+Kino.nothing()
+```
+
+### Other Tools
+
+* Hidden Cells
+* Animation
+* YouTube (Jonatan Klosko)
+* Livebook Navigation
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Student/Community Projects
+
+* Elixir Words Per Minute
+* Elixir Wordle
+
+## Teaching Problem Solving (Holistic Approach To Education)
+
+* Small step programming
+* Shrinking the problem
+* Input/Output
+* Scientific debugging (observe, hypothesis, verify)
+* Live researching (ChatGPT, Stack Overflow, common resources)
+* Pair Programming
+* Mob Programming
+* Project Planning (Design, Diagraming, Kanban)
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Student Example
+
+```mermaid
+ erDiagram
+
+    Product {
+      string product_name
+    }
+
+
+    ShoppingList {
+      string list_name
+      ListItem[] list_items
+    }
+
+    ShoppingList ||--|{ ListItem :""
+
+    ListItem {
+      id list_id
+      id product_id
+      int quantity
+    }
+
+
+    ListItem }|--|| Product :""
+
+
+    
+    Recipe {
+      string name
+      RecipeItem[] recipe_items
+    }
+
+    RecipeItem }|--|| Product :""
+
+
+    RecipeItem }|--|| Recipe :""
+    RecipeItem {
+      id product
+      int quantity
+    }
+
+    User }o--o{ Recipe :""
+    
+    User {
+      string username
+      string email
+      string password_hash
+    }
+
+    ShoppingList }|--|{ User :""
+```
+
+## Hiring Support
+
+Phases of job-seeking
+
+1. Getting ready to look for work
+2. Looking for work
+3. Interviewing for positions
+4. Getting offers and selecting/negotiating your position
+
+Job Seeking Methods
+
+1. **Direct Contact**
+2. Events & Social Networking
+3. Job boards
+
+Focus
+
+* Resume creation
+* Linkedin connections and endorsements
+* Portfolio building and continued learning
+
+How we help
+
+* Resume review
+* Linkedin review
+* Direct contact scripts
+* Network connections
+* Mentorship on take-home assignments
+* Career advice
+
+## What Our Students Are Saying
+
+> DockYard has put together a very comprehensive curriculum, aimed to provide a solid first step into the world of Elixir. I think DockYard Academy has succeeded in delivering the promise of preparing someone to enter the professional market in three months. This first step would not have been possible without DockYard Academy and Brooklin. If I had decided to learn this material on my own, we would be talking about years of self-instruction.
+
+> I think it has been an incredible experience, learning Elixir seemed like a challenge that I didn't quite know how to approach. However, with the support of DYA and its exceptional and complimentary resources, the journey has become much easier, well-directed, and enriching.
+
+> While I have grown a lot as a programmer in this cohort I have also witnessed Brooklin grow in many ways. Towards the end of our course, driven by Brooklin's passion to teach effectively, he came up with some powerful formats for teaching in a group that had a profound impact on all of the students. I think this line of growth is going to further separate the DockYard Academy from any other software development course available.
+
+> Dockyard Academy has stretched me in ways I could not predict nor imagine at the beginning of the course. I feel a sense of pride for having completed the course, while I also know that my competence and knowledge as a developer has only taken the first step. At the moment I am looking at a world of opportunities that did not exist a mere four months ago.
+
+## Future Goals and Experiments
+
+* Internship program
+* Improving the self-led experience
+* Expanding course offerings
+* Multi-cohort project
+* More knowledge work (written quizes, pre-testing, etc)
+* Video content
+* Curriculum Release 2
+
+## How can you get involved?
+
+* Join the DYA Discord
+* Send me ideas and resources
+* Introduce me to people you think I should meet
+* Try out and/or contribute to the open source curriculum
+* Recommend the program to potential students
